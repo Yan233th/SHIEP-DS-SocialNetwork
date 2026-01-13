@@ -1,0 +1,33 @@
+# Rust
+debug
+target
+**/*.rs.bk
+**/mutants.out*/
+
+# C++
+*.d
+*.slo
+*.lo
+*.o
+*.obj
+*.gch
+*.pch
+*.ilk
+*.dwo
+*.lai
+*.la
+
+# Shared
+*.pdb
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+*.out
+*.app
+
+# Others
+*.mod
+*.smod
