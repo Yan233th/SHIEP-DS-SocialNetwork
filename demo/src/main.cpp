@@ -48,30 +48,36 @@ int main(int argc, char *argv[]) {
             i++;
         }
         else if (arg == "-p" || arg == "--path") {
-            std::string_view from = argv[++i];
-            std::string_view to = argv[++i];
-            std::cout << "Path: " << from << "->" << to << std::endl;
+            std::string from = argv[++i];
+            std::string to = argv[++i];
+            std::cout << std::endl << "Path: " << from << " -> " << to << std::endl;
+            graph.getPath(from, to);
         }
         else if (arg == "-n" || arg == "--nearby") {
-            std::string_view person = argv[++i];
+            std::string person = argv[++i];
             std::size_t radius = std::stoul(argv[++i]);
-            std::cout << "Nearby: " << person << ", radius=" << radius << std::endl;
+            std::cout << std::endl << "Nearby: " << person << ", radius=" << radius << std::endl;
+            graph.getNearby(person, radius);
         }
         else if (arg == "-r" || arg == "--reach") {
-            std::string_view person = argv[++i];
-            std::size_t depth = std::stoul(argv[++i]);
-            std::cout << "Reach: " << person << ", depth=" << depth << std::endl;
+            std::string person = argv[++i];
+            std::size_t hops = std::stoul(argv[++i]);
+            std::cout << std::endl << "Reach: " << person << ", depth=" << hops << std::endl;
+            graph.getReachable(person, hops);
         }
         else if (arg == "-a" || arg == "--analyze") {
-            std::cout << "Analyzing core people..." << std::endl;
+            std::cout << std::endl << "Analyzing core people..." << std::endl;
+            graph.analyze();
         }
         else if (arg == "-c" || arg == "--circle") {
-            std::string_view person = argv[++i];
-            std::cout << "Circle: " << person << std::endl;
+            std::string person = argv[++i];
+            std::cout << std::endl << "Circle: " << person << std::endl;
+            graph.getCircle(person);
         }
         else if (arg == "-i" || arg == "--info") {
-            std::string_view person = argv[++i];
-            std::cout << "Info: " << person << std::endl;
+            std::string person = argv[++i];
+            std::cout << std::endl << "Info: " << person << std::endl;
+            graph.getInfo(person);
         }
         else {
             std::cerr << "Unknown option: " << arg << std::endl;
