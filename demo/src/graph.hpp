@@ -163,38 +163,52 @@ struct Graph {
                 }
             }
         }
-        std::cout << "People reachable from " << person << " within " << hops << " hops:" << std::endl;
+        std::cout << "People reachable from " << person << " at exactly " << hops << " hops:" << std::endl;
+        bool found = false;
         for (std::size_t i = 0; i < nodes.size(); i++) {
-            if (i != idx && dist[i] <= hops) {
-                std::cout << "  " << nodes[i].name << " (" << dist[i] << " hops)" << std::endl;
+            if (dist[i] == hops) {
+                std::cout << "  " << nodes[i].name << std::endl;
+                found = true;
             }
+        }
+        if (!found) {
+            std::cout << "  No one at exactly " << hops << " hops." << std::endl;
         }
         return true;
     }
 
     void analyze() {
-        std::vector<std::pair<std::size_t, std::size_t>> degrees;
+        std::vector<std::tuple<std::size_t, double, std::size_t>> stats;
+
         for (std::size_t i = 0; i < nodes.size(); i++) {
-            degrees.emplace_back(adj[i].size(), i);
+            double weightSum = 0.0;
+            for (const auto &[v, w] : adj[i]) {
+                weightSum += w;
+            }
+            stats.emplace_back(adj[i].size(), weightSum, i);
         }
-        std::sort(degrees.begin(), degrees.end(), std::greater<>());
+
+        std::sort(stats.begin(), stats.end(), [](const auto &a, const auto &b) {
+            if (std::get<1>(a) != std::get<1>(b)) return std::get<1>(a) > std::get<1>(b);
+            return std::get<0>(a) > std::get<0>(b);
+            });
         std::size_t n = nodes.size();
         std::size_t coreEnd = n / 5;
         std::size_t activeEnd = n * 3 / 5;
         std::cout << "=== Core People (top 20%) ===" << std::endl;
         for (std::size_t i = 0; i < coreEnd && i < n; i++) {
-            auto [deg, idx] = degrees[i];
-            std::cout << "  " << nodes[idx].name << " (degree: " << deg << ")" << std::endl;
+            auto [deg, weight, idx] = stats[i];
+            std::cout << "  " << nodes[idx].name << " (degree: " << deg << ", weight: " << weight << ")" << std::endl;
         }
         std::cout << "=== Active People (middle 40%) ===" << std::endl;
         for (std::size_t i = coreEnd; i < activeEnd && i < n; i++) {
-            auto [deg, idx] = degrees[i];
-            std::cout << "  " << nodes[idx].name << " (degree: " << deg << ")" << std::endl;
+            auto [deg, weight, idx] = stats[i];
+            std::cout << "  " << nodes[idx].name << " (degree: " << deg << ", weight: " << weight << ")" << std::endl;
         }
         std::cout << "=== Edge People (bottom 40%) ===" << std::endl;
         for (std::size_t i = activeEnd; i < n; i++) {
-            auto [deg, idx] = degrees[i];
-            std::cout << "  " << nodes[idx].name << " (degree: " << deg << ")" << std::endl;
+            auto [deg, weight, idx] = stats[i];
+            std::cout << "  " << nodes[idx].name << " (degree: " << deg << ", weight: " << weight << ")" << std::endl;
         }
     }
 
