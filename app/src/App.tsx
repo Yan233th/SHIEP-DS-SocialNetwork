@@ -1,50 +1,107 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { open } from "@tauri-apps/plugin-dialog";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const [status, setStatus] = useState("等待加载...");
+  const [pathResult, setPathResult] = useState("");
+  const [graphData, setGraphData] = useState("");
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  // 1. 选择并加载 CSV
+  async function handleLoadCSV() {
+    try {
+      const filePath = await open({
+        multiple: false,
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+      });
+
+      if (filePath) {
+        setStatus("加载中...");
+        const result = await invoke<string>("load_csv", { path: filePath });
+        setStatus(result);
+      }
+    } catch (e) {
+      setStatus(`错误: ${e}`);
+    }
+  }
+
+  // 2. 测试最短路径
+  async function handleFindPath() {
+    try {
+      const path = await invoke<string[]>("get_shortest_path", { start, end });
+      setPathResult(path.join(" → "));
+    } catch (e) {
+      setPathResult(`错误: ${e}`);
+    }
+  }
+
+  // 3. 测试获取图数据
+  async function handleGetGraphData() {
+    try {
+      const data = await invoke("get_graph_data");
+      // 格式化 JSON 显示在页面上
+      setGraphData(JSON.stringify(data, null, 2));
+      setStatus("图数据已加载，见下方");
+    } catch (e) {
+      setGraphData(`错误: ${e}`);
+    }
   }
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div style={{ padding: 20, fontFamily: "monospace" }}>
+      <h1>Test Page</h1>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
+      {/* 加载 CSV */}
+      <section style={{ marginBottom: 20 }}>
+        <button onClick={handleLoadCSV}>选择 CSV 文件</button>
+        <p>状态: {status}</p>
+      </section>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
+      {/* 最短路径测试 */}
+      <section style={{ marginBottom: 20 }}>
+        <h3>最短路径测试</h3>
         <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+          placeholder="起点"
+          value={start}
+          onChange={(e) => setStart(e.target.value)}
+          style={{ marginRight: 10, padding: 5 }}
         />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+        <input
+          placeholder="终点"
+          value={end}
+          onChange={(e) => setEnd(e.target.value)}
+          style={{ marginRight: 10, padding: 5 }}
+        />
+        <button onClick={handleFindPath}>查找路径</button>
+        <p>结果: {pathResult || "无"}</p>
+      </section>
+
+      {/* 获取图数据 */}
+      <section style={{ marginBottom: 20 }}>
+        <button onClick={handleGetGraphData}>获取图数据</button>
+      </section>
+
+      {/* 数据展示区*/}
+      {graphData && (
+        <section>
+          <h3>图数据</h3>
+          <pre
+            style={{
+              // background: "#1e1e1e",
+              // color: "#0f0",
+              padding: 15,
+              borderRadius: 5,
+              maxHeight: 400,
+              overflow: "auto", fontSize: 12,
+            }}
+          >
+            {graphData.split("\n").slice(0, 100).join("\n")}{graphData.split("\n").length > 100 && "\n... (截断)"}
+          </pre>
+        </section>
+      )}
+    </div>
   );
 }
 
