@@ -48,18 +48,18 @@ impl Graph {
         self.nodes.clear();
         self.adj.clear();
         self.name2idx.clear();
-        let file: File = File::open(filepath).map_err(|e| format!("无法打开文件: {}", e))?;
-        let reader: BufReader<File> = BufReader::new(file);
+        let file = File::open(filepath).map_err(|e| format!("无法打开文件: {}", e))?;
+        let reader = BufReader::new(file);
         for line in reader.lines().skip(1) {
-            let line: String = line.map_err(|e| e.to_string())?;
+            let line = line.map_err(|e| e.to_string())?;
             if line.trim().is_empty() {
                 continue;
             }
-            let parts: Vec<&str> = line.split(',').collect();
+            let parts = line.split(',').collect::<Vec<_>>();
             if let [u_str, v_str, w_str] = parts.as_slice() {
-                let w: f64 = w_str.trim().parse().unwrap_or(0.0);
-                let u: usize = self.update_node(u_str.trim());
-                let v: usize = self.update_node(v_str.trim());
+                let w = w_str.trim().parse().unwrap_or(0.0);
+                let u = self.update_node(u_str.trim());
+                let v = self.update_node(v_str.trim());
                 self.adj[u].push((v, w));
                 self.adj[v].push((u, w));
             }
@@ -70,14 +70,14 @@ impl Graph {
     pub fn get_path(&self, start: &str, end: &str) -> Option<Vec<String>> {
         let &start_idx = self.name2idx.get(start)?;
         let &end_idx = self.name2idx.get(end)?;
-        let mut queue: VecDeque<usize> = VecDeque::new();
+        let mut queue = VecDeque::new();
         queue.push_back(start_idx);
-        let mut prev: Vec<Option<usize>> = vec![None; self.nodes.len()];
+        let mut prev = vec![None; self.nodes.len()];
         prev[start_idx] = Some(start_idx);
         while let Some(u) = queue.pop_front() {
             if u == end_idx {
-                let mut path: Vec<String> = Vec::new();
-                let mut cur: usize = end_idx;
+                let mut path = Vec::new();
+                let mut cur = end_idx;
                 while cur != start_idx {
                     path.push(self.nodes[cur].name.clone());
                     cur = prev[cur].unwrap();
