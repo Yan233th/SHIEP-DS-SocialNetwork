@@ -67,7 +67,7 @@ struct Graph {
             // std::println("{}->{}: {}->{}", from, to, fromIdx, toIdx);
 
             adj[fromIdx].emplace_back(toIdx, weight);
-            adj[toIdx].emplace_back(fromIdx, weight);
+            // adj[toIdx].emplace_back(fromIdx, weight);
         }
         return true;
     }

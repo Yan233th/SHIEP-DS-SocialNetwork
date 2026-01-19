@@ -117,7 +117,7 @@ impl Graph {
                 let u = self.update_node(u_str.trim());
                 let v = self.update_node(v_str.trim());
                 self.adj[u].push((v, w));
-                self.adj[v].push((u, w));
+                // self.adj[v].push((u, w));
             }
         }
         Ok(())
