@@ -13,6 +13,14 @@ async loadCsv(path: string) : Promise<Result<string, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getGraphData() : Promise<Result<GraphData, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_graph_data") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getShortestPath(start: string, end: string) : Promise<Result<PathResult, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_shortest_path", { start, end }) };
@@ -21,9 +29,41 @@ async getShortestPath(start: string, end: string) : Promise<Result<PathResult, s
     else return { status: "error", error: e  as any };
 }
 },
-async getGraphData() : Promise<Result<GraphData, string>> {
+async getNearby(person: string, radius: number) : Promise<Result<NearbyPerson[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_graph_data") };
+    return { status: "ok", data: await TAURI_INVOKE("get_nearby", { person, radius }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getReachable(person: string, hops: number) : Promise<Result<string[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_reachable", { person, hops }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async analyze() : Promise<Result<AnalysisResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("analyze") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getCircle(person: string) : Promise<Result<CircleMember[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_circle", { person }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getInfo(person: string) : Promise<Result<PersonInfo, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_info", { person }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -41,11 +81,16 @@ async getGraphData() : Promise<Result<GraphData, string>> {
 
 /** user-defined types **/
 
+export type AnalysisResult = { core: PersonStats[]; active: PersonStats[]; edge: PersonStats[] }
+export type CircleMember = { name: string; weight: number }
 export type Coordinate = { x: number; y: number }
 export type Edge = { source: string; target: string; weight: number }
 export type GraphData = { nodes: Node[]; edges: Edge[] }
+export type NearbyPerson = { name: string; distance: number }
 export type Node = { name: string; loc: Coordinate }
 export type PathResult = { path: string[]; hops: number }
+export type PersonInfo = { name: string; index: number; loc: Coordinate; connections: number }
+export type PersonStats = { name: string; degree: number; weight_sum: number }
 
 /** tauri-specta globals **/
 

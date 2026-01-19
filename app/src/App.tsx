@@ -1,127 +1,321 @@
 import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { commands, GraphData } from "./bindings";
+import { commands } from "./bindings";
+import type { 
+  GraphData, 
+  PathResult, 
+  NearbyPerson, 
+  AnalysisResult, 
+  CircleMember, 
+  PersonInfo 
+} from "./bindings";
+
+// 封装 Result 处理
+function unwrap<T>(result: { status: "ok"; data: T } | { status: "error"; error: string }): T {
+  if (result.status === "ok") return result.data;
+  throw new Error(result.error);
+}
 
 function App() {
+  // 状态
   const [status, setStatus] = useState("等待加载...");
-  const [pathResult, setPathResult] = useState("");
+  
+  // 各功能的输入和结果
   const [graphData, setGraphData] = useState<GraphData | null>(null);
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
+  
+  const [pathStart, setPathStart] = useState("");
+  const [pathEnd, setPathEnd] = useState("");
+  const [pathResult, setPathResult] = useState<PathResult | null>(null);
+  
+  const [nearbyPerson, setNearbyPerson] = useState("");
+  const [nearbyRadius, setNearbyRadius] = useState("30");
+  const [nearbyResult, setNearbyResult] = useState<NearbyPerson[] | null>(null);
+  
+  const [reachPerson, setReachPerson] = useState("");
+  const [reachHops, setReachHops] = useState("2");
+  const [reachResult, setReachResult] = useState<string[] | null>(null);
+  
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  
+  const [circlePerson, setCirclePerson] = useState("");
+  const [circleResult, setCircleResult] = useState<CircleMember[] | null>(null);
+  
+  const [infoPerson, setInfoPerson] = useState("");
+  const [infoResult, setInfoResult] = useState<PersonInfo | null>(null);
 
+  // 1. 加载 CSV
   async function handleLoadCSV() {
-    const filePath = await open({
-      multiple: false,
-      filters: [{ name: "CSV", extensions: ["csv"] }],
-    });
-    if (filePath) {
-      setStatus("加载中...");
-      const result = await commands.loadCsv(filePath);
-
-      if (result.status === "ok") {
-        setStatus(result.data);
-      } else {
-        setStatus(`错误: ${result.error}`);
+    try {
+      const filePath = await open({
+        multiple: false,
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+      });
+      if (filePath) {
+        setStatus("加载中...");
+        const result = unwrap(await commands.loadCsv(filePath));
+        setStatus(result);
       }
+    } catch (e) {
+      setStatus(`错误: ${e}`);
     }
   }
-  async function handleFindPath() {
-    const result = await commands.getShortestPath(start, end);
 
-    if (result.status === "ok") {
-      setPathResult(result.data.join(" → "));
-    } else {
-      setPathResult(`错误: ${result.error}`);
-    }
-  }
+  // 2. 获取图数据
   async function handleGetGraphData() {
-    const result = await commands.getGraphData();
-
-    if (result.status === "ok") {
-      setGraphData(result.data);
-      setStatus("图数据已加载");
-    } else {
-      setStatus(`错误: ${result.error}`);
+    try {
+      const data = unwrap(await commands.getGraphData());
+      setGraphData(data);
+      setStatus(`图数据: ${data.nodes.length} 节点, ${data.edges.length} 边`);
+    } catch (e) {
+      setStatus(`错误: ${e}`);
     }
   }
+
+  // 3. 最短路径
+  async function handleGetPath() {
+    try {
+      const result = unwrap(await commands.getShortestPath(pathStart, pathEnd));
+      setPathResult(result);
+    } catch (e) {
+      setPathResult(null);
+      setStatus(`错误: ${e}`);
+    }
+  }
+
+  // 4. 附近的人
+  async function handleGetNearby() {
+    try {
+      const result = unwrap(await commands.getNearby(nearbyPerson, parseFloat(nearbyRadius)));
+      setNearbyResult(result);
+    } catch (e) {
+      setNearbyResult(null);
+      setStatus(`错误: ${e}`);
+    }
+  }
+
+  // 5. N跳可达
+  async function handleGetReachable() {
+    try {
+      const result = unwrap(await commands.getReachable(reachPerson, parseInt(reachHops)));
+      setReachResult(result);
+    } catch (e) {
+      setReachResult(null);
+      setStatus(`错误: ${e}`);
+    }
+  }
+
+  // 6. 分析
+  async function handleAnalyze() {
+    try {
+      const result = unwrap(await commands.analyze());
+      setAnalysisResult(result);
+    } catch (e) {
+      setAnalysisResult(null);
+      setStatus(`错误: ${e}`);
+    }
+  }
+
+  // 7. 社交圈
+  async function handleGetCircle() {
+    try {
+      const result = unwrap(await commands.getCircle(circlePerson));
+      setCircleResult(result);
+    } catch (e) {
+      setCircleResult(null);
+      setStatus(`错误: ${e}`);
+    }
+  }
+
+  // 8. 个人信息
+  async function handleGetInfo() {
+    try {
+      const result = unwrap(await commands.getInfo(infoPerson));
+      setInfoResult(result);
+    } catch (e) {
+      setInfoResult(null);
+      setStatus(`错误: ${e}`);
+    }
+  }
+
+  const inputStyle = { padding: 5, marginRight: 10, width: 120 };
+  const sectionStyle = { marginBottom: 20, padding: 10, border: "1px solid #ccc", borderRadius: 5 };
 
   return (
-    <div style={{ padding: 20, fontFamily: "monospace" }}>
-      <h1>Test Page</h1>
+    <div style={{ padding: 20, fontFamily: "monospace", maxWidth: 800 }}>
+      <h1>社交网络 API 测试</h1>
+      <p><strong>状态:</strong> {status}</p>
 
-      {/* 加载 CSV */}
-      <section style={{ marginBottom: 20 }}>
+      {/* 1. 加载 CSV */}
+      <section style={sectionStyle}>
+        <h3>1. 加载数据</h3>
         <button onClick={handleLoadCSV}>选择 CSV 文件</button>
-        <p>状态: {status}</p>
+        <button onClick={handleGetGraphData} style={{ marginLeft: 10 }}>获取图数据</button>
+        {graphData && (
+          <p>节点: {graphData.nodes.length}, 边: {graphData.edges.length}</p>
+        )}
       </section>
 
-      {/* 最短路径测试 */}
-      <section style={{ marginBottom: 20 }}>
-        <h3>最短路径测试</h3>
+      {/* 2. 最短路径 */}
+      <section style={sectionStyle}>
+        <h3>2. 最短路径</h3>
         <input
           placeholder="起点"
-          value={start}
-          onChange={(e) => setStart(e.target.value)}
-          style={{ marginRight: 10, padding: 5 }}
+          value={pathStart}
+          onChange={(e) => setPathStart(e.target.value)}
+          style={inputStyle}
         />
         <input
           placeholder="终点"
-          value={end}
-          onChange={(e) => setEnd(e.target.value)}
-          style={{ marginRight: 10, padding: 5 }}
+          value={pathEnd}
+          onChange={(e) => setPathEnd(e.target.value)}
+          style={inputStyle}
         />
-        <button onClick={handleFindPath}>查找路径</button>
-        <p>结果: {pathResult || "无"}</p>
+        <button onClick={handleGetPath}>查找</button>
+        {pathResult && (
+          <div style={{ marginTop: 10 }}>
+            <p>路径: {pathResult.path.join(" → ")}</p>
+            <p>跳数: {pathResult.hops}</p>
+          </div>
+        )}
       </section>
 
-      {/* 获取图数据 */}
-      <section style={{ marginBottom: 20 }}>
-        <button onClick={handleGetGraphData}>获取图数据</button>
+      {/* 3. 附近的人 */}
+      <section style={sectionStyle}>
+        <h3>3. 附近的人（地理位置）</h3>
+        <input
+          placeholder="用户名"
+          value={nearbyPerson}
+          onChange={(e) => setNearbyPerson(e.target.value)}
+          style={inputStyle}
+        />
+        <input
+          placeholder="半径"
+          type="number"
+          value={nearbyRadius}
+          onChange={(e) => setNearbyRadius(e.target.value)}
+          style={{ ...inputStyle, width: 60 }}
+        />
+        <button onClick={handleGetNearby}>查找</button>
+        {nearbyResult && (
+          <ul style={{ marginTop: 10 }}>
+            {nearbyResult.length === 0 && <li>无结果</li>}
+            {nearbyResult.map((p) => (
+              <li key={p.name}>
+                {p.name} (距离: {p.distance.toFixed(2)})
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
-      {/* 数据展示区*/}
-      {graphData && (
-        <section>
-          <h3>图数据</h3>
-          <pre
-            style={{
-              // background: "#1e1e1e",
-              // color: "#0f0",
-              padding: 15,
-              borderRadius: 5,
-              maxHeight: 400,
-              overflow: "auto", fontSize: 12,
-            }}
-          >
-            {graphData && (
-              <section>
-                <h3>图数据</h3>
-                <p>节点: {graphData.nodes.length}, 边: {graphData.edges.length}</p>
+      {/* 4. N跳可达 */}
+      <section style={sectionStyle}>
+        <h3>4. N跳可达</h3>
+        <input
+          placeholder="用户名"
+          value={reachPerson}
+          onChange={(e) => setReachPerson(e.target.value)}
+          style={inputStyle}
+        />
+        <input
+          placeholder="跳数"
+          type="number"
+          value={reachHops}
+          onChange={(e) => setReachHops(e.target.value)}
+          style={{ ...inputStyle, width: 60 }}
+        />
+        <button onClick={handleGetReachable}>查找</button>
+        {reachResult && (
+          <div style={{ marginTop: 10 }}>
+            {reachResult.length === 0 && <p>无结果</p>}
+            <p>{reachResult.join(", ")}</p>
+          </div>
+        )}
+      </section>
 
-                <h4>节点列表</h4>
-                <ul style={{ maxHeight: 200, overflow: "auto" }}>
-                  {graphData.nodes.slice(0, 20).map(node => (
-                    <li key={node.name}>
-                      {node.name} ({node.loc.x.toFixed(2)}, {node.loc.y.toFixed(2)})
-                    </li>
-                  ))}
-                  {graphData.nodes.length > 20 && <li>... 等 {graphData.nodes.length - 20} 个</li>}
-                </ul>
+      {/* 5. 分析 */}
+      <section style={sectionStyle}>
+        <h3>5. 人物分析</h3>
+        <button onClick={handleAnalyze}>分析</button>
+        {analysisResult && (
+          <div style={{ marginTop: 10, display: "flex", gap: 20 }}>
+            <div>
+              <h4>核心人物 (前20%)</h4>
+              <ul>
+                {analysisResult.core.slice(0, 5).map((p) => (
+                  <li key={p.name}>
+                    {p.name} (度:{p.degree}, 权重:{p.weight_sum.toFixed(1)})
+                  </li>
+                ))}
+                {analysisResult.core.length > 5 && <li>...</li>}
+              </ul>
+            </div>
+            <div>
+              <h4>活跃人物 (中40%)</h4>
+              <ul>
+                {analysisResult.active.slice(0, 5).map((p) => (
+                  <li key={p.name}>
+                    {p.name} (度:{p.degree}, 权重:{p.weight_sum.toFixed(1)})
+                  </li>
+                ))}
+                {analysisResult.active.length > 5 && <li>...</li>}
+              </ul>
+            </div>
+            <div>
+              <h4>边缘人物 (后40%)</h4>
+              <ul>
+                {analysisResult.edge.slice(0, 5).map((p) => (
+                  <li key={p.name}>
+                    {p.name} (度:{p.degree}, 权重:{p.weight_sum.toFixed(1)})
+                  </li>
+                ))}
+                {analysisResult.edge.length > 5 && <li>...</li>}
+              </ul>
+            </div>
+          </div>
+        )}
+      </section>
 
-                <h4>边列表</h4>
-                <ul style={{ maxHeight: 200, overflow: "auto" }}>
-                  {graphData.edges.slice(0, 20).map((edge, i) => (
-                    <li key={i}>
-                      {edge.source} → {edge.target} (权重: {edge.weight.toFixed(2)})
-                    </li>
-                  ))}
-                  {graphData.edges.length > 20 && <li>... 等 {graphData.edges.length - 20} 条</li>}
-                </ul>
-              </section>
-            )}
-          </pre>
-        </section>
-      )}
+      {/* 6. 社交圈 */}
+      <section style={sectionStyle}>
+        <h3>6. 社交圈</h3>
+        <input
+          placeholder="用户名"
+          value={circlePerson}
+          onChange={(e) => setCirclePerson(e.target.value)}
+          style={inputStyle}
+        />
+        <button onClick={handleGetCircle}>查看</button>
+        {circleResult && (
+          <ul style={{ marginTop: 10 }}>
+            {circleResult.map((m) => (
+              <li key={m.name}>
+                {m.name} (权重: {m.weight.toFixed(2)})
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* 7. 个人信息 */}
+      <section style={sectionStyle}>
+        <h3>7. 个人信息</h3>
+        <input
+          placeholder="用户名"
+          value={infoPerson}
+          onChange={(e) => setInfoPerson(e.target.value)}
+          style={inputStyle}
+        />
+        <button onClick={handleGetInfo}>查看</button>
+        {infoResult && (
+          <div style={{ marginTop: 10 }}>
+            <p>名称: {infoResult.name}</p>
+            <p>索引: {infoResult.index}</p>
+            <p>位置: ({infoResult.loc.x.toFixed(2)}, {infoResult.loc.y.toFixed(2)})</p>
+            <p>连接数: {infoResult.connections}</p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

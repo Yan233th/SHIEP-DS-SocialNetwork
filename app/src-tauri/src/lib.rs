@@ -83,7 +83,16 @@ fn get_info(person: String, state: State<AppState>) -> Result<PersonInfo, String
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = Builder::<tauri::Wry>::new().commands(collect_commands![load_csv, get_shortest_path, get_graph_data,]);
+    let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
+        load_csv,
+        get_graph_data,
+        get_shortest_path,
+        get_nearby,
+        get_reachable,
+        analyze,
+        get_circle,
+        get_info,
+    ]);
     #[cfg(debug_assertions)]
     builder
         .export(
