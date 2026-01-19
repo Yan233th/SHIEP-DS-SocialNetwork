@@ -61,6 +61,7 @@ export function GraphView({ nodes, edges, highlight, onReset, onNodePick }: Prop
       {graphNodes.length > 0 ? (
         <GraphCanvas
           // animated={false}
+          edgeArrowPosition="none"
           ref={graphRef}
           nodes={graphNodes}
           edges={graphEdges}
