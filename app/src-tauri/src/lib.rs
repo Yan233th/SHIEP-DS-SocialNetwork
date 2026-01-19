@@ -49,7 +49,7 @@ fn get_shortest_path(start: String, end: String, state: State<AppState>) -> Resu
 #[specta::specta]
 fn get_nearby(person: String, radius: f64, state: State<AppState>) -> Result<Vec<NearbyPerson>, String> {
     let g = state.graph.lock().map_err(|e| e.to_string())?;
-    g.get_nearby(&person, radius).ok_or_else(|| format!("未找到用户: {}", person))
+    g.get_nearby(&person, radius).ok_or_else(|| format!("未找到节点: {}", person))
 }
 
 #[tauri::command]
@@ -57,7 +57,7 @@ fn get_nearby(person: String, radius: f64, state: State<AppState>) -> Result<Vec
 fn get_reachable(person: String, hops: usize, state: State<AppState>) -> Result<Vec<String>, String> {
     let g = state.graph.lock().map_err(|e| e.to_string())?;
     g.get_reachable(&person, hops)
-        .ok_or_else(|| format!("未找到用户: {}", person))
+        .ok_or_else(|| format!("未找到节点: {}", person))
 }
 
 #[tauri::command]
@@ -71,14 +71,14 @@ fn analyze(state: State<AppState>) -> Result<AnalysisResult, String> {
 #[specta::specta]
 fn get_circle(person: String, state: State<AppState>) -> Result<Vec<CircleMember>, String> {
     let g = state.graph.lock().map_err(|e| e.to_string())?;
-    g.get_circle(&person).ok_or_else(|| format!("未找到用户: {}", person))
+    g.get_circle(&person).ok_or_else(|| format!("未找到节点: {}", person))
 }
 
 #[tauri::command]
 #[specta::specta]
 fn get_info(person: String, state: State<AppState>) -> Result<PersonInfo, String> {
     let g = state.graph.lock().map_err(|e| e.to_string())?;
-    g.get_info(&person).ok_or_else(|| format!("未找到用户: {}", person))
+    g.get_info(&person).ok_or_else(|| format!("未找到节点: {}", person))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
