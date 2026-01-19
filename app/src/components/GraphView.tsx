@@ -12,9 +12,10 @@ type Props = {
   edges: Edge[];
   highlight: Highlight;
   onReset: () => void;
+  onNodePick: (name: string) => void;
 };
 
-export function GraphView({ nodes, edges, highlight, onReset }: Props) {
+export function GraphView({ nodes, edges, highlight, onReset, onNodePick }: Props) {
   const graphRef = useRef<GraphCanvasRef | null>(null);
 
   const graphNodes = useMemo(
@@ -41,7 +42,7 @@ export function GraphView({ nodes, edges, highlight, onReset }: Props) {
 
   const resetAll = () => {
     onReset();
-    graphRef.current?.centerGraph();
+    graphRef.current?.fitNodesInView();
   };
 
   return (
@@ -85,6 +86,7 @@ export function GraphView({ nodes, edges, highlight, onReset }: Props) {
               label: { color: "#cbd5e1", stroke: "#09090b", activeColor: "#ffffff" },
             },
           }}
+          onNodeClick={(n: any) => onNodePick(String(n.id))}
         />
       ) : (
         <div className="h-full flex items-center justify-center text-muted-foreground">

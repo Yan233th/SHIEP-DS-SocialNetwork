@@ -7,7 +7,13 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-background text-foreground font-sans">
-      <GraphView nodes={sg.nodes} edges={sg.edges} highlight={sg.highlight} onReset={sg.reset} />
+      <GraphView
+        nodes={sg.nodes}
+        edges={sg.edges}
+        highlight={sg.highlight}
+        onReset={sg.reset}
+        onNodePick={sg.selectNode}
+      />
       <ControlPanel {...sg} />
     </div>
   );

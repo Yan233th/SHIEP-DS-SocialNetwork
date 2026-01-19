@@ -57,6 +57,8 @@ export function useSocialGraph() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [analysisTab, setAnalysisTab] = useState<AnalysisTab>("core");
 
+  const [socialTab, setSocialTab] = useState<"circle" | "info">("circle");
+
   const nodeCount = nodes.length;
   const edgeCount = edges.length;
 
@@ -179,6 +181,35 @@ export function useSocialGraph() {
     }
   };
 
+  const selectNode = async (name: string) => {
+    // Fill all inputs
+    setPathStart(name);
+    setPathEnd("");
+    setNearbyTarget(name);
+    setReachTarget(name);
+    setCircleTarget(name);
+    setInfoTarget(name);
+    // Reset some results (optional but cleaner)
+    setPathResult(null);
+    setNearbyResult(null);
+    setReachResult(null);
+    setCircleResult(null);
+    setAnalysis(null);
+    // Switch to Info tab
+    setSocialTab("info");
+    // Highlight clicked node
+    setHighlight(highlightOnlyNodes([name]));
+    // Auto fetch info
+    try {
+      const res = unwrap(await commands.getInfo(name));
+      setInfoResult(res);
+      setStatus(`Info loaded: ${name}`);
+    } catch (e) {
+      setInfoResult(null);
+      setStatus(`Info error: ${String(e)}`);
+    }
+  };
+
   useEffect(() => {
     if (!analysis) return;
     const list = analysis[analysisTab];
@@ -242,6 +273,12 @@ export function useSocialGraph() {
     infoTarget,
     setInfoTarget,
     infoResult,
+
+    // social tab control
+    socialTab,
+    setSocialTab,
+    // node click interaction
+    selectNode,
 
     // analysis
     analysis,

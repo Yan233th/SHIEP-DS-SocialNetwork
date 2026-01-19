@@ -57,7 +57,7 @@ export function ControlPanel(p: Props) {
           </FeatureCard>
 
           <FeatureCard title="Social" icon={<Info className="w-4 h-4" />}>
-            <Tabs defaultValue="circle" className="w-full">
+            <Tabs value={p.socialTab} onValueChange={(v) => p.setSocialTab(v as any)} className="w-full">
               <TabsList className="grid w-full grid-cols-2 h-8">
                 <TabsTrigger value="circle" className="text-xs">
                   Circle
@@ -197,22 +197,16 @@ export function ControlPanel(p: Props) {
             </Button>
 
             {p.analysis ? (
-              <>
+              <div className="space-y-3">
                 <Tabs
                   value={p.analysisTab}
                   onValueChange={(v) => p.setAnalysisTab(v as any)}
                   className="w-full"
                 >
                   <TabsList className="grid w-full grid-cols-3 h-7">
-                    <TabsTrigger value="core" className="text-[10px]">
-                      core
-                    </TabsTrigger>
-                    <TabsTrigger value="active" className="text-[10px]">
-                      active
-                    </TabsTrigger>
-                    <TabsTrigger value="edge" className="text-[10px]">
-                      edge
-                    </TabsTrigger>
+                    <TabsTrigger value="core" className="text-[10px]">core</TabsTrigger>
+                    <TabsTrigger value="active" className="text-[10px]">active</TabsTrigger>
+                    <TabsTrigger value="edge" className="text-[10px]">edge</TabsTrigger>
                   </TabsList>
                 </Tabs>
 
@@ -220,16 +214,29 @@ export function ControlPanel(p: Props) {
                   highlighted: {p.analysisList.length} nodes
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {p.analysisList.slice(0, 8).map((x) => (
-                    <Badge key={x.name} variant="outline" className="font-normal">
-                      {x.name}
-                    </Badge>
+                <ScrollArea className="h-44 rounded border p-2 bg-muted/20">
+                  {p.analysisList.slice(0, 60).map((x, i) => (
+                    <div
+                      key={x.name}
+                      className="flex items-center justify-between text-xs py-1 border-b border-border/50 last:border-0"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-muted-foreground w-5">{i + 1}</span>
+                        <Badge variant="outline" className="h-5 px-1 font-normal truncate">
+                          {x.name}
+                        </Badge>
+                      </div>
+
+                      <div className="text-[10px] text-muted-foreground shrink-0">
+                        deg:{x.degree} / w:{x.weight_sum.toFixed(0)}
+                      </div>
+                    </div>
                   ))}
-                </div>
-              </>
+                </ScrollArea>
+              </div>
             ) : null}
           </FeatureCard>
+
         </div>
       </ScrollArea>
     </div>
