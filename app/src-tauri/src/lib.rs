@@ -1,5 +1,5 @@
 mod graph;
-use graph::{Edge, Graph, GraphData};
+use graph::{AnalysisResult, CircleMember, Edge, Graph, GraphData, NearbyPerson, PathResult, PersonInfo};
 
 use std::sync::Mutex;
 use tauri::State;
@@ -9,7 +9,6 @@ struct AppState {
     graph: Mutex<Graph>,
 }
 
-// 命令：加载 CSV
 #[tauri::command]
 #[specta::specta]
 fn load_csv(path: String, state: State<AppState>) -> Result<String, String> {
@@ -17,27 +16,17 @@ fn load_csv(path: String, state: State<AppState>) -> Result<String, String> {
     g.load_from_csv(&path)?;
     Ok(format!("加载成功！节点: {}, 边: {}", g.node_count(), g.edge_count()))
 }
-// 命令：获取最短路径
-#[tauri::command]
-#[specta::specta]
-fn get_shortest_path(start: String, end: String, state: State<AppState>) -> Result<Vec<String>, String> {
-    let g = state.graph.lock().map_err(|e| e.to_string())?;
-    g.get_path(&start, &end).ok_or_else(|| "未找到路径".to_string())
-}
-// 命令：获取图数据（给前端渲染）
+
 #[tauri::command]
 #[specta::specta]
 fn get_graph_data(state: State<AppState>) -> Result<GraphData, String> {
-    // 返回类型改了
     let g = state.graph.lock().map_err(|e| e.to_string())?;
-
     let nodes = g.nodes.clone();
-
-    let mut links = Vec::new();
-    for (u, edges) in g.adj.iter().enumerate() {
-        for &(v, w) in edges {
+    let mut edges = Vec::new();
+    for (u, adj) in g.adj.iter().enumerate() {
+        for &(v, w) in adj {
             if u < v {
-                links.push(Edge {
+                edges.push(Edge {
                     source: g.nodes[u].name.clone(),
                     target: g.nodes[v].name.clone(),
                     weight: w,
@@ -45,8 +34,51 @@ fn get_graph_data(state: State<AppState>) -> Result<GraphData, String> {
             }
         }
     }
+    Ok(GraphData { nodes, edges })
+}
 
-    Ok(GraphData { nodes, edges: links })
+#[tauri::command]
+#[specta::specta]
+fn get_shortest_path(start: String, end: String, state: State<AppState>) -> Result<PathResult, String> {
+    let g = state.graph.lock().map_err(|e| e.to_string())?;
+    g.get_path(&start, &end)
+        .ok_or_else(|| format!("未找到 {} 到 {} 的路径", start, end))
+}
+
+#[tauri::command]
+#[specta::specta]
+fn get_nearby(person: String, radius: f64, state: State<AppState>) -> Result<Vec<NearbyPerson>, String> {
+    let g = state.graph.lock().map_err(|e| e.to_string())?;
+    g.get_nearby(&person, radius).ok_or_else(|| format!("未找到用户: {}", person))
+}
+
+#[tauri::command]
+#[specta::specta]
+fn get_reachable(person: String, hops: usize, state: State<AppState>) -> Result<Vec<String>, String> {
+    let g = state.graph.lock().map_err(|e| e.to_string())?;
+    g.get_reachable(&person, hops)
+        .ok_or_else(|| format!("未找到用户: {}", person))
+}
+
+#[tauri::command]
+#[specta::specta]
+fn analyze(state: State<AppState>) -> Result<AnalysisResult, String> {
+    let g = state.graph.lock().map_err(|e| e.to_string())?;
+    Ok(g.analyze())
+}
+
+#[tauri::command]
+#[specta::specta]
+fn get_circle(person: String, state: State<AppState>) -> Result<Vec<CircleMember>, String> {
+    let g = state.graph.lock().map_err(|e| e.to_string())?;
+    g.get_circle(&person).ok_or_else(|| format!("未找到用户: {}", person))
+}
+
+#[tauri::command]
+#[specta::specta]
+fn get_info(person: String, state: State<AppState>) -> Result<PersonInfo, String> {
+    let g = state.graph.lock().map_err(|e| e.to_string())?;
+    g.get_info(&person).ok_or_else(|| format!("未找到用户: {}", person))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -54,7 +86,10 @@ pub fn run() {
     let builder = Builder::<tauri::Wry>::new().commands(collect_commands![load_csv, get_shortest_path, get_graph_data,]);
     #[cfg(debug_assertions)]
     builder
-        .export(specta_typescript::Typescript::default(), "../src/bindings.ts")
+        .export(
+            specta_typescript::Typescript::default().bigint(specta_typescript::BigIntExportBehavior::Number),
+            "../src/bindings.ts",
+        )
         .expect("Failed to export typescript bindings");
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())

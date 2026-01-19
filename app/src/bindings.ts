@@ -13,7 +13,7 @@ async loadCsv(path: string) : Promise<Result<string, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getShortestPath(start: string, end: string) : Promise<Result<string[], string>> {
+async getShortestPath(start: string, end: string) : Promise<Result<PathResult, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_shortest_path", { start, end }) };
 } catch (e) {
@@ -45,6 +45,7 @@ export type Coordinate = { x: number; y: number }
 export type Edge = { source: string; target: string; weight: number }
 export type GraphData = { nodes: Node[]; edges: Edge[] }
 export type Node = { name: string; loc: Coordinate }
+export type PathResult = { path: string[]; hops: number }
 
 /** tauri-specta globals **/
 
