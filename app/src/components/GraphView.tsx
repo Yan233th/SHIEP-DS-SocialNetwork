@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import { GraphCanvas, darkTheme, type GraphCanvasRef } from "reagraph";
 import { RotateCcw } from "lucide-react";
 
@@ -40,9 +40,14 @@ export function GraphView({ nodes, edges, highlight, onReset, onNodePick }: Prop
     [edges]
   );
 
+  useEffect(() => {
+    if (highlight.nodes.length === 0) return;
+    graphRef.current?.fitNodesInView?.(highlight.nodes);
+  }, [highlight.nodes]);
+
   const resetAll = () => {
     onReset();
-    graphRef.current?.fitNodesInView();
+    graphRef.current?.fitNodesInView?.();
   };
 
   return (
@@ -55,6 +60,7 @@ export function GraphView({ nodes, edges, highlight, onReset, onNodePick }: Prop
 
       {graphNodes.length > 0 ? (
         <GraphCanvas
+          // animated={false}
           ref={graphRef}
           nodes={graphNodes}
           edges={graphEdges}
