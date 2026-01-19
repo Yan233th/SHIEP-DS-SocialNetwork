@@ -97,7 +97,7 @@ export function GraphView({ nodes, edges, highlight, onReset, onNodePick }: Prop
         />
       ) : (
         <div className="h-full flex items-center justify-center text-muted-foreground">
-          Load a CSV to show the graph
+          载入 CSV 以显示图表
         </div>
       )}
     </div>

@@ -17,19 +17,19 @@ export function ControlPanel(p: Props) {
     <div className="w-80 min-w-[20rem] max-w-[20rem] h-full border-l border-border bg-card flex flex-col z-10 shadow-xl">
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
-          <FeatureCard title="Data" icon={<FileText className="w-4 h-4" />}>
+          <FeatureCard title="数据源" icon={<FileText className="w-4 h-4" />}>
             <Button onClick={p.loadFromDialog} variant="secondary" className="w-full">
-              Load CSV
+              加载 CSV 文件
             </Button>
             <div className="text-xs text-muted-foreground break-words p-2 bg-muted/50 rounded">
               {p.status}
             </div>
             <div className="text-xs text-muted-foreground">
-              Nodes: {p.nodeCount} / Edges: {p.edgeCount}
+              节点: {p.nodeCount} / 边: {p.edgeCount}
             </div>
           </FeatureCard>
 
-          <FeatureCard title="Shortest Path" icon={<Search className="w-4 h-4" />}>
+          <FeatureCard title="查询最短路径" icon={<Search className="w-4 h-4" />}>
             <div className="flex gap-2">
               <Input
                 placeholder="start"
@@ -45,25 +45,25 @@ export function ControlPanel(p: Props) {
               />
             </div>
             <Button onClick={p.findPath} size="sm" className="w-full" disabled={disabled}>
-              Run
+              运行
             </Button>
 
             {p.pathResult ? (
               <div className="text-xs bg-muted p-2 rounded break-words">
-                <div className="font-medium">hops: {p.pathResult.hops}</div>
+                <div className="font-medium">跳数: {p.pathResult.hops}</div>
                 <div className="opacity-80">{p.pathResult.path.join(" → ")}</div>
               </div>
             ) : null}
           </FeatureCard>
 
-          <FeatureCard title="Social" icon={<Info className="w-4 h-4" />}>
+          <FeatureCard title="社交信息" icon={<Info className="w-4 h-4" />}>
             <Tabs value={p.socialTab} onValueChange={(v) => p.setSocialTab(v as any)} className="w-full">
               <TabsList className="grid w-full grid-cols-2 h-8">
                 <TabsTrigger value="circle" className="text-xs">
-                  Circle
+                  社交圈
                 </TabsTrigger>
                 <TabsTrigger value="info" className="text-xs">
-                  Info
+                  节点信息
                 </TabsTrigger>
               </TabsList>
 
@@ -81,7 +81,7 @@ export function ControlPanel(p: Props) {
                 </div>
                 {p.circleResult ? (
                   <div className="text-xs text-muted-foreground">
-                    highlighted: {p.circleResult.length} neighbors
+                    已高亮: {p.circleResult.length} 邻居
                   </div>
                 ) : null}
               </TabsContent>
@@ -102,17 +102,17 @@ export function ControlPanel(p: Props) {
                 {p.infoResult ? (
                   <div className="text-xs space-y-1 bg-muted p-2 rounded">
                     <div className="flex justify-between">
-                      <span>index</span>
+                      <span>索引编号</span>
                       <span>{p.infoResult.index}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>loc</span>
+                      <span>坐标</span>
                       <span>
                         ({p.infoResult.loc.x.toFixed(1)}, {p.infoResult.loc.y.toFixed(1)})
                       </span>
                     </div>
                     <div className="flex justify-between font-medium">
-                      <span>connections</span>
+                      <span>连接数</span>
                       <span>{p.infoResult.connections}</span>
                     </div>
                   </div>
@@ -121,14 +121,14 @@ export function ControlPanel(p: Props) {
             </Tabs>
           </FeatureCard>
 
-          <FeatureCard title="Range" icon={<Users className="w-4 h-4" />}>
+          <FeatureCard title="周边信息" icon={<Users className="w-4 h-4" />}>
             <Tabs defaultValue="nearby" className="w-full">
               <TabsList className="grid w-full grid-cols-2 h-8">
                 <TabsTrigger value="nearby" className="text-xs">
-                  Nearby
+                  邻近节点
                 </TabsTrigger>
                 <TabsTrigger value="reach" className="text-xs">
-                  N-hops
+                  N跳可达
                 </TabsTrigger>
               </TabsList>
 
@@ -149,11 +149,11 @@ export function ControlPanel(p: Props) {
                   />
                 </div>
                 <Button onClick={p.findNearby} size="sm" className="w-full h-8" disabled={disabled}>
-                  Run
+                  运行
                 </Button>
                 {p.nearbyResult ? (
                   <div className="text-xs text-muted-foreground">
-                    highlighted: {p.nearbyResult.length} nodes
+                    已高亮: {p.nearbyResult.length} 节点
                   </div>
                 ) : null}
               </TabsContent>
@@ -175,25 +175,25 @@ export function ControlPanel(p: Props) {
                   />
                 </div>
                 <Button onClick={p.findReachable} size="sm" className="w-full h-8" disabled={disabled}>
-                  Run
+                  运行
                 </Button>
                 {p.reachResult ? (
                   <div className="text-xs text-muted-foreground">
-                    highlighted: {p.reachResult.length} nodes
+                    已高亮: {p.reachResult.length} 节点
                   </div>
                 ) : null}
               </TabsContent>
             </Tabs>
           </FeatureCard>
 
-          <FeatureCard title="Analysis" icon={<Activity className="w-4 h-4" />}>
+          <FeatureCard title="社交网络分析" icon={<Activity className="w-4 h-4" />}>
             <Button
               onClick={p.runAnalyze}
               variant="outline"
               className="w-full h-8"
               disabled={disabled}
             >
-              Analyze
+              分析
             </Button>
 
             {p.analysis ? (
@@ -204,14 +204,14 @@ export function ControlPanel(p: Props) {
                   className="w-full"
                 >
                   <TabsList className="grid w-full grid-cols-3 h-7">
-                    <TabsTrigger value="core" className="text-[10px]">core</TabsTrigger>
-                    <TabsTrigger value="active" className="text-[10px]">active</TabsTrigger>
-                    <TabsTrigger value="edge" className="text-[10px]">edge</TabsTrigger>
+                    <TabsTrigger value="core" className="text-[10px]">核心</TabsTrigger>
+                    <TabsTrigger value="active" className="text-[10px]">活跃</TabsTrigger>
+                    <TabsTrigger value="edge" className="text-[10px]">边缘</TabsTrigger>
                   </TabsList>
                 </Tabs>
 
                 <div className="text-xs text-muted-foreground">
-                  highlighted: {p.analysisList.length} nodes
+                  已高亮: {p.analysisList.length} 节点
                 </div>
 
                 <ScrollArea className="h-44 rounded border p-2 bg-muted/20">
