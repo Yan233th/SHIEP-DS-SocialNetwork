@@ -15,6 +15,7 @@ NAME_PREFIX = "user"  # node name prefix: user0, user1, ...
 WEIGHT_MIN = 1.0
 WEIGHT_MAX = 100.0
 
+OUTPUT_BIDIRECTIONAL = True  # True: write both u->v and v->u
 ENSURE_CONNECTED = True  # guarantee connectivity
 RANDOM_SEED = 114514  # set None for random each time
 # =========================
@@ -86,9 +87,13 @@ def main():
         w.writerow(["source", "target", "value"])
         for u, v, weight in edges:
             w.writerow([u, v, f"{weight:.6f}"])
+            if OUTPUT_BIDIRECTIONAL:
+                w.writerow([v, u, f"{weight:.6f}"])
 
     print(f"Generated: {OUT_FILE}")
     print(f"Nodes: {NODE_COUNT}, Edges: {len(edges)}, Connected: {ENSURE_CONNECTED}")
+    lines = len(edges) * (2 if OUTPUT_BIDIRECTIONAL else 1)
+    print(f"CSV lines (without header): {lines}")
 
 
 if __name__ == "__main__":
