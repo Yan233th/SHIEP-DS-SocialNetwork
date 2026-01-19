@@ -1,8 +1,9 @@
 mod graph;
-use graph::Graph;
+use graph::{Edge, Graph, GraphData};
 
 use std::sync::Mutex;
 use tauri::State;
+use tauri_specta::{collect_commands, Builder};
 
 struct AppState {
     graph: Mutex<Graph>,
@@ -10,6 +11,7 @@ struct AppState {
 
 // 命令：加载 CSV
 #[tauri::command]
+#[specta::specta]
 fn load_csv(path: String, state: State<AppState>) -> Result<String, String> {
     let mut g = state.graph.lock().map_err(|e| e.to_string())?;
     g.load_from_csv(&path)?;
@@ -17,38 +19,34 @@ fn load_csv(path: String, state: State<AppState>) -> Result<String, String> {
 }
 // 命令：获取最短路径
 #[tauri::command]
+#[specta::specta]
 fn get_shortest_path(start: String, end: String, state: State<AppState>) -> Result<Vec<String>, String> {
     let g = state.graph.lock().map_err(|e| e.to_string())?;
     g.get_path(&start, &end).ok_or_else(|| "未找到路径".to_string())
 }
 // 命令：获取图数据（给前端渲染）
 #[tauri::command]
-fn get_graph_data(state: State<AppState>) -> Result<serde_json::Value, String> {
+#[specta::specta]
+fn get_graph_data(state: State<AppState>) -> Result<GraphData, String> {
+    // 返回类型改了
     let g = state.graph.lock().map_err(|e| e.to_string())?;
-    let nodes: Vec<_> = g
-        .nodes
-        .iter()
-        .map(|n| {
-            serde_json::json!({
-                "id": n.name,
-                "x": n.loc.x,
-                "y": n.loc.y
-            })
-        })
-        .collect();
+
+    let nodes = g.nodes.clone();
+
     let mut links = Vec::new();
-    for (u_idx, edges) in g.adj.iter().enumerate() {
-        for &(v_idx, w) in edges {
-            if u_idx < v_idx {
-                links.push(serde_json::json!({
-                    "source": g.nodes[u_idx].name,
-                    "target": g.nodes[v_idx].name,
-                    "value": w
-                }));
+    for (u, edges) in g.adj.iter().enumerate() {
+        for &(v, w) in edges {
+            if u < v {
+                links.push(Edge {
+                    source: g.nodes[u].name.clone(),
+                    target: g.nodes[v].name.clone(),
+                    weight: w,
+                });
             }
         }
     }
-    Ok(serde_json::json!({ "nodes": nodes, "links": links }))
+
+    Ok(GraphData { nodes, edges: links })
 }
 
 #[tauri::command]
@@ -58,13 +56,22 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let builder = Builder::<tauri::Wry>::new().commands(collect_commands![load_csv, get_shortest_path, get_graph_data,]);
+    #[cfg(debug_assertions)]
+    builder
+        .export(specta_typescript::Typescript::default(), "../src/bindings.ts")
+        .expect("Failed to export typescript bindings");
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(AppState {
             graph: Mutex::new(Graph::default()),
         })
-        .invoke_handler(tauri::generate_handler![load_csv, get_shortest_path, get_graph_data])
+        .invoke_handler(builder.invoke_handler())
+        .setup(move |app| {
+            builder.mount_events(app);
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

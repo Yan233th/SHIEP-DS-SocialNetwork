@@ -1,51 +1,47 @@
 import { useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import { commands, GraphData } from "./bindings";
 
 function App() {
   const [status, setStatus] = useState("等待加载...");
   const [pathResult, setPathResult] = useState("");
-  const [graphData, setGraphData] = useState("");
+  const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
 
-  // 1. 选择并加载 CSV
   async function handleLoadCSV() {
-    try {
-      const filePath = await open({
-        multiple: false,
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-      });
+    const filePath = await open({
+      multiple: false,
+      filters: [{ name: "CSV", extensions: ["csv"] }],
+    });
+    if (filePath) {
+      setStatus("加载中...");
+      const result = await commands.loadCsv(filePath);
 
-      if (filePath) {
-        setStatus("加载中...");
-        const result = await invoke<string>("load_csv", { path: filePath });
-        setStatus(result);
+      if (result.status === "ok") {
+        setStatus(result.data);
+      } else {
+        setStatus(`错误: ${result.error}`);
       }
-    } catch (e) {
-      setStatus(`错误: ${e}`);
     }
   }
-
-  // 2. 测试最短路径
   async function handleFindPath() {
-    try {
-      const path = await invoke<string[]>("get_shortest_path", { start, end });
-      setPathResult(path.join(" → "));
-    } catch (e) {
-      setPathResult(`错误: ${e}`);
+    const result = await commands.getShortestPath(start, end);
+
+    if (result.status === "ok") {
+      setPathResult(result.data.join(" → "));
+    } else {
+      setPathResult(`错误: ${result.error}`);
     }
   }
-
-  // 3. 测试获取图数据
   async function handleGetGraphData() {
-    try {
-      const data = await invoke("get_graph_data");
-      // 格式化 JSON 显示在页面上
-      setGraphData(JSON.stringify(data, null, 2));
-      setStatus("图数据已加载，见下方");
-    } catch (e) {
-      setGraphData(`错误: ${e}`);
+    const result = await commands.getGraphData();
+
+    if (result.status === "ok") {
+      setGraphData(result.data);
+      setStatus("图数据已加载");
+    } else {
+      setStatus(`错误: ${result.error}`);
     }
   }
 
@@ -97,7 +93,32 @@ function App() {
               overflow: "auto", fontSize: 12,
             }}
           >
-            {graphData.split("\n").slice(0, 100).join("\n")}{graphData.split("\n").length > 100 && "\n... (截断)"}
+            {graphData && (
+              <section>
+                <h3>图数据</h3>
+                <p>节点: {graphData.nodes.length}, 边: {graphData.edges.length}</p>
+
+                <h4>节点列表</h4>
+                <ul style={{ maxHeight: 200, overflow: "auto" }}>
+                  {graphData.nodes.slice(0, 20).map(node => (
+                    <li key={node.name}>
+                      {node.name} ({node.loc.x.toFixed(2)}, {node.loc.y.toFixed(2)})
+                    </li>
+                  ))}
+                  {graphData.nodes.length > 20 && <li>... 等 {graphData.nodes.length - 20} 个</li>}
+                </ul>
+
+                <h4>边列表</h4>
+                <ul style={{ maxHeight: 200, overflow: "auto" }}>
+                  {graphData.edges.slice(0, 20).map((edge, i) => (
+                    <li key={i}>
+                      {edge.source} → {edge.target} (权重: {edge.weight.toFixed(2)})
+                    </li>
+                  ))}
+                  {graphData.edges.length > 20 && <li>... 等 {graphData.edges.length - 20} 条</li>}
+                </ul>
+              </section>
+            )}
           </pre>
         </section>
       )}

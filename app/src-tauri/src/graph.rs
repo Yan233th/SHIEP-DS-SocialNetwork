@@ -6,17 +6,31 @@ use std::{
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use specta::Type;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct Coordinate {
     pub x: f64,
     pub y: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct Node {
     pub name: String,
     pub loc: Coordinate,
+}
+
+#[derive(Serialize, Type)]
+pub struct Edge {
+    pub source: String,
+    pub target: String,
+    pub weight: f64,
+}
+
+#[derive(Serialize, Type)]
+pub struct GraphData {
+    pub nodes: Vec<Node>,
+    pub edges: Vec<Edge>,
 }
 
 #[derive(Default)]
