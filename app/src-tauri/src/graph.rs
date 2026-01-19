@@ -5,16 +5,16 @@ use std::{
 };
 
 use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use specta::Type;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Clone, Serialize, Type)]
 pub struct Coordinate {
     pub x: f64,
     pub y: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Clone, Serialize, Type)]
 pub struct Node {
     pub name: String,
     pub loc: Coordinate,
