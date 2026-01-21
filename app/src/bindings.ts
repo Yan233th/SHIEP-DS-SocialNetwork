@@ -68,6 +68,14 @@ async getInfo(person: string) : Promise<Result<PersonInfo, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async sixDegrees() : Promise<Result<SixDegreesResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("six_degrees") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -91,6 +99,7 @@ export type Node = { name: string; loc: Coordinate }
 export type PathResult = { path: string[]; hops: number }
 export type PersonInfo = { name: string; index: number; loc: Coordinate; connections: number }
 export type PersonStats = { name: string; degree: number; weight_sum: number }
+export type SixDegreesResult = { total_pairs: number; reachable_pairs: number; unreachable_pairs: number; hist: number[]; avg_distance: number; le6_pairs: number; ratio_le6: number; diameter: number; diameter_path: string[] }
 
 /** tauri-specta globals **/
 

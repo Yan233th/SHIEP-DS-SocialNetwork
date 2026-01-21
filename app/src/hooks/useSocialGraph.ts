@@ -10,6 +10,7 @@ import type {
   Node,
   PathResult,
   PersonInfo,
+  SixDegreesResult,
 } from "@/bindings";
 
 import { unwrap } from "@/utils/tauriResult";
@@ -57,6 +58,9 @@ export function useSocialGraph() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [analysisTab, setAnalysisTab] = useState<AnalysisTab>("core");
 
+  // SixDegrees
+  const [six, setSix] = useState<SixDegreesResult | null>(null);
+
   const [socialTab, setSocialTab] = useState<"circle" | "info">("circle");
 
   const nodeCount = nodes.length;
@@ -69,6 +73,7 @@ export function useSocialGraph() {
     setCircleResult(null);
     setInfoResult(null);
     setAnalysis(null);
+    setSix(null);
   };
 
   const loadFromDialog = async () => {
@@ -181,6 +186,28 @@ export function useSocialGraph() {
     }
   };
 
+  const runSixDegrees = async () => {
+    try {
+      const res = unwrap(await commands.sixDegrees());
+      setSix(res);
+      // Optional: auto-highlight diameter path after analysis
+      if (res.diameter_path.length > 0) {
+        setHighlight(highlightPath(res.diameter_path));
+      }
+      setStatus(
+        `六度分析完成: ≤6比例 ${(res.ratio_le6 * 100).toFixed(2)}%，平均分隔度 ${res.avg_distance.toFixed(2)}，直径 ${res.diameter}`
+      );
+    } catch (e) {
+      setSix(null);
+      setStatus(`六度分析失败: ${String(e)}`);
+    }
+  };
+
+  const highlightDiameterPath = () => {
+    if (!six || six.diameter_path.length === 0) return;
+    setHighlight(highlightPath(six.diameter_path));
+  };
+
   const selectNode = async (name: string) => {
     // Fill all inputs
     setPathStart(name);
@@ -194,7 +221,6 @@ export function useSocialGraph() {
     setNearbyResult(null);
     setReachResult(null);
     setCircleResult(null);
-    setAnalysis(null);
     // Switch to Info tab
     setSocialTab("info");
     // Highlight clicked node
@@ -285,5 +311,10 @@ export function useSocialGraph() {
     analysisTab,
     setAnalysisTab,
     analysisList,
+
+    // SixDegrees
+    six,
+    runSixDegrees,
+    highlightDiameterPath,
   };
 }

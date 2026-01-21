@@ -2,6 +2,7 @@ import { FeatureCard } from "@/components/FeatureCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
@@ -12,6 +13,7 @@ type Props = ReturnType<typeof useSocialGraph>;
 
 export function ControlPanel(p: Props) {
   const disabled = p.nodeCount === 0;
+  const six = p.six;
 
   return (
     <div className="w-80 min-w-[20rem] max-w-[20rem] h-full border-l border-border bg-card flex flex-col z-10 shadow-xl">
@@ -235,6 +237,80 @@ export function ControlPanel(p: Props) {
                 </ScrollArea>
               </div>
             ) : null}
+          </FeatureCard>
+
+          <FeatureCard title="六度分析" icon={<Activity className="w-4 h-4" />}>
+            <div className="flex gap-2">
+              <Button
+                onClick={p.runSixDegrees}
+                variant="outline"
+                className="flex-1 h-8"
+                disabled={disabled}
+              >
+                运行六度分析
+              </Button>
+              <Button
+                onClick={p.highlightDiameterPath}
+                variant="secondary"
+                className="h-8"
+                disabled={!six || six.diameter_path.length === 0}
+                title="高亮网络直径对应的一条最短路径"
+              >
+                高亮直径
+              </Button>
+            </div>
+            {six ? (
+              <div className="text-xs space-y-1 bg-muted/30 border rounded p-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">可达点对</span>
+                  <span>{six.reachable_pairs} / {six.total_pairs}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">≤6 比例(可达)</span>
+                  <span>{(six.ratio_le6 * 100).toFixed(2)}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">平均分隔度</span>
+                  <span>{six.avg_distance.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-medium">
+                  <span className="text-muted-foreground">网络直径</span>
+                  <span>{six.diameter}</span>
+                </div>
+                {/* simple histogram (1..6 and >6) */}
+                <Separator className="my-2" />
+                <div className="space-y-1">
+                  {Array.from({ length: Math.min(6, six.hist.length - 1) }, (_, i) => i + 1).map((d) => (
+                    <div key={d} className="flex justify-between">
+                      <span className="text-muted-foreground">{d} 跳</span>
+                      <span>{six.hist[d] ?? 0}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">&gt;6 跳</span>
+                    <span>
+                      {six.hist.slice(7).reduce((a, b) => a + b, 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">不可达</span>
+                    <span>{six.unreachable_pairs}</span>
+                  </div>
+                </div>
+                {six.diameter_path.length > 0 ? (
+                  <>
+                    <Separator className="my-2" />
+                    <div className="text-muted-foreground break-words">
+                      直径路径示例：{six.diameter_path.join(" → ")}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">
+                点击“运行六度分析”统计全图最短路分布
+              </div>
+            )}
           </FeatureCard>
 
         </div>

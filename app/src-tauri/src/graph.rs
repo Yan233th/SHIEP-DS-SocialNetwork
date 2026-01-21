@@ -66,6 +66,18 @@ pub struct PersonInfo {
     pub loc: Coordinate,
     pub connections: usize,
 }
+#[derive(Serialize, Type)]
+pub struct SixDegreesResult {
+    pub total_pairs: usize,
+    pub reachable_pairs: usize,
+    pub unreachable_pairs: usize,
+    pub hist: Vec<usize>,  // hist[d] = count of pairs with distance d, d starts from 0..diameter
+    pub avg_distance: f64, // average over reachable pairs
+    pub le6_pairs: usize,  // number of reachable pairs with distance <= 6
+    pub ratio_le6: f64,    // le6_pairs / reachable_pairs
+    pub diameter: usize,
+    pub diameter_path: Vec<String>, // one example path achieving diameter (for highlighting)
+}
 
 // Graph Structure
 #[derive(Default)]
@@ -80,7 +92,7 @@ impl Graph {
     }
 
     pub fn edge_count(&self) -> usize {
-        self.adj.iter().map(|e| e.len()).sum::<usize>() / 2
+        self.adj.iter().map(Vec::len).sum::<usize>() / 2
     }
 
     pub fn update_node(&mut self, name: &str) -> usize {
@@ -251,5 +263,86 @@ impl Graph {
             loc: node.loc.clone(),
             connections: self.adj[idx].len(),
         })
+    }
+
+    pub fn six_degrees(&self) -> SixDegreesResult {
+        let n = self.nodes.len();
+        let total_pairs = n.saturating_sub(1) * n / 2;
+        let mut hist: Vec<usize> = vec![0; 1]; // hist[0] placeholder
+        let mut reachable_pairs = 0usize;
+        let mut unreachable_pairs = 0usize;
+        let mut sum_dist: u64 = 0;
+        let mut le6_pairs = 0usize;
+        let mut diameter = 0usize;
+        let mut diameter_pair: Option<(usize, usize)> = None;
+        let mut dist = vec![-1i32; n];
+        let mut q = VecDeque::<usize>::new();
+        for s in 0..n {
+            // BFS from s
+            dist.fill(-1);
+            q.clear();
+            dist[s] = 0;
+            q.push_back(s);
+            while let Some(u) = q.pop_front() {
+                let du = dist[u];
+                for &(v, _) in &self.adj[u] {
+                    if dist[v] == -1 {
+                        dist[v] = du + 1;
+                        q.push_back(v);
+                    }
+                }
+            }
+            // count pairs (s, t) for t > s only
+            for t in (s + 1)..n {
+                let d = dist[t];
+                if d >= 0 {
+                    let d_usize = d as usize;
+                    reachable_pairs += 1;
+                    sum_dist += d_usize as u64;
+                    if d_usize <= 6 {
+                        le6_pairs += 1;
+                    }
+                    if d_usize > diameter {
+                        diameter = d_usize;
+                        diameter_pair = Some((s, t));
+                    }
+                    if d_usize >= hist.len() {
+                        hist.resize(d_usize + 1, 0);
+                    }
+                    hist[d_usize] += 1;
+                } else {
+                    unreachable_pairs += 1;
+                }
+            }
+        }
+        let avg_distance = if reachable_pairs == 0 {
+            0.0
+        } else {
+            (sum_dist as f64) / (reachable_pairs as f64)
+        };
+        let ratio_le6 = if reachable_pairs == 0 {
+            0.0
+        } else {
+            (le6_pairs as f64) / (reachable_pairs as f64)
+        };
+        // Get one concrete diameter path for visualization
+        let diameter_path = if let Some((s, t)) = diameter_pair {
+            let from = &self.nodes[s].name;
+            let to = &self.nodes[t].name;
+            self.get_path(from, to).map(|p| p.path).unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        SixDegreesResult {
+            total_pairs,
+            reachable_pairs,
+            unreachable_pairs,
+            hist,
+            avg_distance,
+            le6_pairs,
+            ratio_le6,
+            diameter,
+            diameter_path,
+        }
     }
 }

@@ -1,5 +1,5 @@
 mod graph;
-use graph::{AnalysisResult, CircleMember, Edge, Graph, GraphData, NearbyPerson, PathResult, PersonInfo};
+use graph::{AnalysisResult, CircleMember, Edge, Graph, GraphData, NearbyPerson, PathResult, PersonInfo, SixDegreesResult};
 
 use std::sync::Mutex;
 use tauri::State;
@@ -81,6 +81,13 @@ fn get_info(person: String, state: State<AppState>) -> Result<PersonInfo, String
     g.get_info(&person).ok_or_else(|| format!("未找到节点: {}", person))
 }
 
+#[tauri::command]
+#[specta::specta]
+fn six_degrees(state: State<AppState>) -> Result<SixDegreesResult, String> {
+    let g = state.graph.lock().map_err(|e| e.to_string())?;
+    Ok(g.six_degrees())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
@@ -92,6 +99,7 @@ pub fn run() {
         analyze,
         get_circle,
         get_info,
+        six_degrees,
     ]);
     #[cfg(debug_assertions)]
     builder
